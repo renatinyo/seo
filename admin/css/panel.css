@@ -1,0 +1,331 @@
+/* =========================================
+   RendanIT SEO Panel
+   Slide-in overlay for SEO score display
+   Only loaded for logged-in admins
+   ========================================= */
+
+/* Admin bar node */
+#wp-admin-bar-rseo-score .ab-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+.rseo-ab-icon { font-size: 14px; }
+.rseo-ab-label { font-size: 12px; opacity: 0.8; }
+.rseo-ab-score { font-weight: bold !important; font-size: 13px !important; }
+
+/* Panel Overlay */
+#rseo-panel-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 99999;
+    background: rgba(0,0,0,0.4);
+    transition: opacity 0.25s ease;
+    opacity: 1;
+}
+
+#rseo-panel-overlay.rseo-panel-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#rseo-panel-overlay.rseo-panel-hidden #rseo-panel {
+    transform: translateX(100%);
+}
+
+/* Panel */
+#rseo-panel {
+    position: fixed;
+    top: 32px; /* below admin bar */
+    right: 0;
+    bottom: 0;
+    width: 420px;
+    max-width: 95vw;
+    background: #fff;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(0);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+    font-size: 14px;
+    color: #1e1e1e;
+}
+
+@media (max-width: 600px) {
+    #rseo-panel { top: 46px; width: 100vw; }
+}
+
+/* Header */
+.rseo-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.rseo-panel-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+#rseo-panel-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+#rseo-panel-close:hover {
+    color: #d63638;
+}
+
+/* Body (scrollable) */
+#rseo-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+/* Loading state */
+.rseo-panel-loading {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.rseo-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid #e0e0e0;
+    border-top-color: #2271b1;
+    border-radius: 50%;
+    animation: rseo-spin 0.7s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes rseo-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ========== Score Circle ========== */
+.rseo-score-circle-wrap {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.rseo-score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    position: relative;
+    background: conic-gradient(
+        var(--score-color) calc(var(--score-pct) * 3.6deg),
+        #e8e8e8 calc(var(--score-pct) * 3.6deg)
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rseo-score-inner {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.rseo-score-number {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--score-color);
+}
+
+.rseo-score-grade {
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    margin-top: 2px;
+}
+
+.rseo-score-subtitle {
+    font-size: 14px;
+    color: #555;
+    font-weight: 500;
+}
+
+/* ========== Category Bars ========== */
+.rseo-category-bars {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.rseo-cat-bar {
+    margin-bottom: 10px;
+}
+
+.rseo-cat-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 4px;
+    color: #444;
+}
+
+.rseo-cat-score {
+    font-weight: 600;
+}
+
+.rseo-bar-bg {
+    height: 6px;
+    background: #eee;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.rseo-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+}
+
+/* ========== Checks List ========== */
+.rseo-checks-list h4 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #888;
+}
+
+.rseo-check {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    align-items: flex-start;
+    transition: background 0.15s;
+}
+
+.rseo-check:hover {
+    background: #f8f9fa;
+}
+
+.rseo-check-good     { border-left: 3px solid #00a32a; }
+.rseo-check-critical  { border-left: 3px solid #d63638; background: #fef0f0; }
+.rseo-check-warning   { border-left: 3px solid #dba617; background: #fffbe6; }
+.rseo-check-info      { border-left: 3px solid #72aee6; }
+
+.rseo-check-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.rseo-check-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.rseo-check-msg {
+    font-size: 13px;
+    line-height: 1.4;
+    color: #333;
+}
+
+.rseo-check-fix {
+    font-size: 12px;
+    color: #666;
+    margin-top: 3px;
+    line-height: 1.3;
+}
+
+.rseo-check-points {
+    font-size: 11px;
+    color: #999;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* ========== Actions ========== */
+.rseo-panel-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+}
+
+.rseo-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none !important;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #333 !important;
+    transition: all 0.15s;
+}
+
+.rseo-btn:hover {
+    background: #f0f0f0;
+    border-color: #999;
+}
+
+.rseo-btn-edit {
+    background: #2271b1 !important;
+    color: #fff !important;
+    border-color: #2271b1 !important;
+}
+
+.rseo-btn-edit:hover {
+    background: #135e96 !important;
+}
+
+/* ========== Admin Column Score ========== */
+.rseo-column-score {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rseo-mini-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.rseo-column-grade {
+    font-size: 12px;
+    font-weight: 600;
+}

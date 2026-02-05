@@ -1,0 +1,230 @@
+/* RendanIT SEO Admin Styles */
+
+.rseo-wrap {
+    max-width: 1200px;
+}
+
+.rseo-wrap h1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+/* Tabs */
+.rseo-tabs {
+    margin-bottom: 0 !important;
+}
+
+.rseo-tab-content {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-top: none;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* Language sections */
+.rseo-lang-section {
+    background: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.rseo-lang-section h3 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Character counter */
+.rseo-char-count {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #666;
+}
+
+.rseo-char-count .rseo-count {
+    font-weight: bold;
+}
+
+.rseo-char-count.rseo-over {
+    color: #d63638;
+}
+
+.rseo-char-count.rseo-optimal {
+    color: #00a32a;
+}
+
+/* Google Preview */
+.rseo-preview, .rseo-google-preview .rseo-preview {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 10px;
+    max-width: 600px;
+    font-family: arial, sans-serif;
+}
+
+.rseo-preview-title {
+    color: #1a0dab;
+    font-size: 18px;
+    line-height: 1.3;
+    margin-bottom: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rseo-preview-url {
+    color: #006621;
+    font-size: 14px;
+    margin-bottom: 3px;
+}
+
+.rseo-preview-desc {
+    color: #545454;
+    font-size: 13px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Metabox */
+.rseo-metabox {
+    padding: 0;
+}
+
+.rseo-metabox-tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    background: #f9f9f9;
+    margin: -6px -12px 15px;
+    padding: 0 12px;
+}
+
+.rseo-mtab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #666;
+    transition: all 0.2s;
+}
+
+.rseo-mtab:hover {
+    color: #333;
+}
+
+.rseo-mtab.active {
+    color: #2271b1;
+    border-bottom-color: #2271b1;
+    font-weight: 600;
+}
+
+.rseo-mtab-content {
+    display: none;
+}
+
+.rseo-mtab-content.active {
+    display: block;
+}
+
+/* Image upload */
+.rseo-upload-image {
+    margin-left: 8px !important;
+}
+
+/* Audit page */
+.rseo-audit-summary {
+    display: flex;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.rseo-audit-stat {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px 30px;
+    text-align: center;
+    flex: 1;
+}
+
+.rseo-stat-number {
+    display: block;
+    font-size: 36px;
+    font-weight: bold;
+    color: #333;
+}
+
+.rseo-stat-label {
+    display: block;
+    font-size: 13px;
+    color: #666;
+    margin-top: 5px;
+}
+
+.rseo-stat-red .rseo-stat-number { color: #d63638; }
+.rseo-stat-orange .rseo-stat-number { color: #dba617; }
+.rseo-stat-green .rseo-stat-number { color: #00a32a; }
+
+/* Audit table */
+.rseo-audit-table {
+    margin-top: 10px;
+}
+
+.rseo-audit-table td,
+.rseo-audit-table th {
+    vertical-align: middle;
+}
+
+.rseo-severity-critical td {
+    background: #fef0f0 !important;
+}
+
+.rseo-severity-warning td {
+    background: #fffbe6 !important;
+}
+
+.rseo-severity-info td {
+    background: #f0f6fc !important;
+}
+
+/* Badges */
+.rseo-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.rseo-badge-critical { background: #fecece; color: #8b0000; }
+.rseo-badge-warning { background: #fef3cd; color: #856404; }
+.rseo-badge-info { background: #cfe2f3; color: #084298; }
+
+.rseo-success {
+    background: #d4edda;
+    color: #155724;
+    padding: 12px 20px;
+    border-radius: 6px;
+    border: 1px solid #c3e6cb;
+}
+
+.rseo-audit-section {
+    margin-bottom: 30px;
+}
+
+.rseo-audit-section h2 {
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+}
