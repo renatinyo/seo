@@ -44,10 +44,22 @@ class RSEO_Schema {
     }
 
     /**
+     * Get language-specific setting with fallback to default
+     */
+    private function get_lang_setting( $key ) {
+        $lang = RendanIT_SEO::get_current_lang();
+        $lang_value = RendanIT_SEO::get_setting( $key . '_' . $lang );
+        if ( $lang_value ) {
+            return $lang_value;
+        }
+        return RendanIT_SEO::get_setting( $key );
+    }
+
+    /**
      * LocalBusiness schema
      */
     private function output_local_business() {
-        $name        = RendanIT_SEO::get_setting( 'schema_name' );
+        $name        = $this->get_lang_setting( 'schema_name' );
         $type        = RendanIT_SEO::get_setting( 'schema_type', 'LocalBusiness' );
 
         if ( ! $name ) return;
@@ -59,7 +71,7 @@ class RSEO_Schema {
             'url'         => RendanIT_SEO::get_setting( 'schema_url', home_url() ),
         ];
 
-        $description = RendanIT_SEO::get_setting( 'schema_description' );
+        $description = $this->get_lang_setting( 'schema_description' );
         if ( $description ) $schema['description'] = $description;
 
         $image = RendanIT_SEO::get_setting( 'schema_image' );
@@ -137,7 +149,7 @@ class RSEO_Schema {
         $schema = [
             '@context'   => 'https://schema.org',
             '@type'      => 'WebSite',
-            'name'       => RendanIT_SEO::get_setting( 'site_name', get_bloginfo( 'name' ) ),
+            'name'       => $this->get_lang_setting( 'schema_name' ) ?: RendanIT_SEO::get_setting( 'site_name', get_bloginfo( 'name' ) ),
             'url'        => home_url( '/' ),
             'inLanguage' => $current_lang,
         ];
@@ -197,7 +209,8 @@ class RSEO_Schema {
         $schema_type = get_post_meta( $post_id, '_rseo_schema_type', true );
         $type = ( $schema_type === 'Article' ) ? 'Article' : 'BlogPosting';
 
-        $business_name = RendanIT_SEO::get_setting( 'schema_name', get_bloginfo( 'name' ) );
+        $business_name = $this->get_lang_setting( 'schema_name' );
+        if ( ! $business_name ) $business_name = get_bloginfo( 'name' );
         $business_logo = RendanIT_SEO::get_setting( 'schema_image' );
 
         $publisher = [
@@ -258,7 +271,7 @@ class RSEO_Schema {
         $items = [];
         $pos   = 1;
 
-        $site_name = RendanIT_SEO::get_setting( 'site_name', get_bloginfo( 'name' ) );
+        $site_name = $this->get_lang_setting( 'schema_name' ) ?: RendanIT_SEO::get_setting( 'site_name', get_bloginfo( 'name' ) );
         if ( ! $site_name ) $site_name = get_bloginfo( 'name' );
 
         // Home - use current language home URL
@@ -320,7 +333,8 @@ class RSEO_Schema {
         $title = get_the_title( $post_id );
         if ( ! $title ) return;
 
-        $business_name = RendanIT_SEO::get_setting( 'schema_name', get_bloginfo( 'name' ) );
+        $business_name = $this->get_lang_setting( 'schema_name' );
+        if ( ! $business_name ) $business_name = get_bloginfo( 'name' );
 
         $schema = [
             '@context'    => 'https://schema.org',
@@ -362,7 +376,7 @@ class RSEO_Schema {
         $services = json_decode( $services_json, true );
         if ( ! is_array( $services ) || empty( $services ) ) return;
 
-        $business_name = RendanIT_SEO::get_setting( 'schema_name' );
+        $business_name = $this->get_lang_setting( 'schema_name' );
 
         foreach ( $services as $service ) {
             if ( ! isset( $service['name'] ) ) continue;

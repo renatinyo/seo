@@ -94,6 +94,12 @@ class RSEO_Settings {
                 if ( isset( $input[ 'home_description_' . $lang ] ) ) {
                     $sanitized[ 'home_description_' . $lang ] = sanitize_textarea_field( $input[ 'home_description_' . $lang ] );
                 }
+                if ( isset( $input[ 'schema_name_' . $lang ] ) ) {
+                    $sanitized[ 'schema_name_' . $lang ] = sanitize_text_field( $input[ 'schema_name_' . $lang ] );
+                }
+                if ( isset( $input[ 'schema_description_' . $lang ] ) ) {
+                    $sanitized[ 'schema_description_' . $lang ] = sanitize_textarea_field( $input[ 'schema_description_' . $lang ] );
+                }
             }
         }
 
@@ -313,8 +319,29 @@ class RSEO_Settings {
                         $types = [
                             'LocalBusiness'            => 'Local Business (általános)',
                             'HealthAndBeautyBusiness'  => 'Health & Beauty Business',
+                            'MassageTherapy'           => 'Massage Therapy / Masszázs',
                             'DaySpa'                   => 'Day Spa',
+                            'Spa'                      => 'Spa',
+                            'MedicalSpa'               => 'Medical Spa',
                             'BeautySalon'              => 'Beauty Salon',
+                            'HairSalon'                => 'Hair Salon',
+                            'NailSalon'                => 'Nail Salon',
+                            'TattooParlor'             => 'Tattoo Parlor',
+                            'Restaurant'               => 'Restaurant / Étterem',
+                            'BarOrPub'                 => 'Bar / Pub',
+                            'CafeOrCoffeeShop'         => 'Café / Kávézó',
+                            'Hotel'                    => 'Hotel / Szálloda',
+                            'LodgingBusiness'          => 'Lodging / Szálláshely',
+                            'FitnessCenter'            => 'Fitness Center',
+                            'SportsClub'               => 'Sports Club',
+                            'Dentist'                  => 'Dentist / Fogorvos',
+                            'MedicalClinic'            => 'Medical Clinic / Klinika',
+                            'Physician'                => 'Physician / Orvos',
+                            'LegalService'             => 'Legal Service / Jogi',
+                            'RealEstateAgent'          => 'Real Estate Agent',
+                            'AutoRepair'               => 'Auto Repair / Autószerelő',
+                            'Store'                    => 'Store / Üzlet',
+                            'Organization'             => 'Organization (általános)',
                         ];
                         foreach ( $types as $val => $label ) {
                             printf(
@@ -333,9 +360,49 @@ class RSEO_Settings {
                 <td><input type="text" name="rseo_settings[schema_name]" id="schema_name" value="<?php echo esc_attr( $this->get( $s, 'schema_name' ) ); ?>" class="regular-text" placeholder="Allure Massage Budapest"></td>
             </tr>
             <tr>
-                <th><label for="schema_description">Leírás</label></th>
-                <td><textarea name="rseo_settings[schema_description]" id="schema_description" rows="3" class="large-text" placeholder="Premium erotic massage salon in Budapest..."><?php echo esc_textarea( $this->get( $s, 'schema_description' ) ); ?></textarea></td>
+                <th><label for="schema_description">Leírás (alapértelmezett)</label></th>
+                <td>
+                    <textarea name="rseo_settings[schema_description]" id="schema_description" rows="3" class="large-text" placeholder="Premium masszázs szalon Budapesten..."><?php echo esc_textarea( $this->get( $s, 'schema_description' ) ); ?></textarea>
+                    <p class="description">Ha nem adsz meg nyelvenkénti leírást, ez jelenik meg minden nyelven.</p>
+                </td>
             </tr>
+            <?php if ( RendanIT_SEO::has_polylang() && function_exists( 'pll_languages_list' ) ) :
+                $languages = pll_languages_list( [ 'fields' => '' ] );
+                if ( count( $languages ) > 1 ) : ?>
+            <tr>
+                <th>Leírás nyelvenkénti</th>
+                <td>
+                    <?php foreach ( $languages as $lang ) :
+                        $lang_slug = $lang->slug;
+                        $lang_name = $lang->name;
+                        $field_key = 'schema_description_' . $lang_slug;
+                    ?>
+                    <div style="margin-bottom:10px;">
+                        <label><strong><?php echo esc_html( $lang_name ); ?> (<?php echo esc_html( $lang_slug ); ?>):</strong></label><br>
+                        <textarea name="rseo_settings[<?php echo esc_attr( $field_key ); ?>]" rows="2" class="large-text" placeholder="<?php echo esc_attr( $lang_name ); ?> nyelvű leírás..."><?php echo esc_textarea( $this->get( $s, $field_key ) ); ?></textarea>
+                    </div>
+                    <?php endforeach; ?>
+                    <p class="description">Ha kitöltöd, az adott nyelven ez jelenik meg a Schema-ban az alapértelmezett leírás helyett.</p>
+                </td>
+            </tr>
+            <tr>
+                <th>Név nyelvenkénti</th>
+                <td>
+                    <?php foreach ( $languages as $lang ) :
+                        $lang_slug = $lang->slug;
+                        $lang_name = $lang->name;
+                        $field_key = 'schema_name_' . $lang_slug;
+                    ?>
+                    <div style="margin-bottom:10px;">
+                        <label><strong><?php echo esc_html( $lang_name ); ?> (<?php echo esc_html( $lang_slug ); ?>):</strong></label><br>
+                        <input type="text" name="rseo_settings[<?php echo esc_attr( $field_key ); ?>]" value="<?php echo esc_attr( $this->get( $s, $field_key ) ); ?>" class="regular-text" placeholder="<?php echo esc_attr( $lang_name ); ?> nyelvű név...">
+                    </div>
+                    <?php endforeach; ?>
+                    <p class="description">Ha kitöltöd, az adott nyelven ez jelenik meg a Schema-ban az alapértelmezett név helyett.</p>
+                </td>
+            </tr>
+                <?php endif;
+            endif; ?>
             <tr>
                 <th><label for="schema_street">Utca, házszám</label></th>
                 <td><input type="text" name="rseo_settings[schema_street]" id="schema_street" value="<?php echo esc_attr( $this->get( $s, 'schema_street' ) ); ?>" class="regular-text" placeholder="Dózsa György út 54"></td>
