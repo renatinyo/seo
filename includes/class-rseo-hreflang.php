@@ -12,14 +12,13 @@ class RSEO_Hreflang {
     }
 
     /**
-     * Remove Polylang's built-in hreflang if we're handling it
+     * Remove Polylang's built-in hreflang to avoid duplicates
      */
     public function maybe_remove_polylang_hreflang() {
         if ( ! RendanIT_SEO::has_polylang() ) return;
 
-        // Polylang uses its own hreflang output - we can let it handle it
-        // or remove and do our own. We'll enhance rather than replace.
-        // Only remove if Polylang's output is insufficient.
+        // Disable Polylang's hreflang output - we handle it ourselves with proper codes
+        add_filter( 'pll_rel_hreflang_attributes', '__return_empty_array' );
     }
 
     /**

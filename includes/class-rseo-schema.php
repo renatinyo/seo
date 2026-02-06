@@ -220,10 +220,14 @@ class RSEO_Schema {
         $items = [];
         $pos   = 1;
 
+        $site_name = RendanIT_SEO::get_setting( 'site_name', get_bloginfo( 'name' ) );
+        if ( ! $site_name ) $site_name = get_bloginfo( 'name' );
+
+        // Home
         $items[] = [
             '@type'    => 'ListItem',
             'position' => $pos++,
-            'name'     => RendanIT_SEO::get_setting( 'site_name', get_bloginfo( 'name' ) ),
+            'name'     => $site_name,
             'item'     => home_url( '/' ),
         ];
 
@@ -232,21 +236,26 @@ class RSEO_Schema {
         if ( $post && $post->post_parent ) {
             $ancestors = array_reverse( get_post_ancestors( $post_id ) );
             foreach ( $ancestors as $ancestor_id ) {
-                $items[] = [
-                    '@type'    => 'ListItem',
-                    'position' => $pos++,
-                    'name'     => get_the_title( $ancestor_id ),
-                    'item'     => get_permalink( $ancestor_id ),
-                ];
+                $ancestor_title = get_the_title( $ancestor_id );
+                if ( $ancestor_title ) {
+                    $items[] = [
+                        '@type'    => 'ListItem',
+                        'position' => $pos++,
+                        'name'     => $ancestor_title,
+                        'item'     => get_permalink( $ancestor_id ),
+                    ];
+                }
             }
         }
 
-        // Current page
+        // Current page - last item should NOT have 'item' per Google spec
+        $current_title = get_the_title( $post_id );
+        if ( ! $current_title ) $current_title = 'Oldal';
+
         $items[] = [
             '@type'    => 'ListItem',
             'position' => $pos,
-            'name'     => get_the_title( $post_id ),
-            'item'     => get_permalink( $post_id ),
+            'name'     => $current_title,
         ];
 
         $schema = [
@@ -254,6 +263,41 @@ class RSEO_Schema {
             '@type'           => 'BreadcrumbList',
             'itemListElement' => $items,
         ];
+
+        $this->print_json_ld( $schema );
+    }
+
+    /**
+     * Service page schema (for individual pages with Service schema type)
+     */
+    private function output_service_page( $post_id ) {
+        $post = get_post( $post_id );
+        if ( ! $post ) return;
+
+        $title = get_the_title( $post_id );
+        if ( ! $title ) return;
+
+        $business_name = RendanIT_SEO::get_setting( 'schema_name', get_bloginfo( 'name' ) );
+
+        $schema = [
+            '@context'    => 'https://schema.org',
+            '@type'       => 'Service',
+            'name'        => $title,
+            'url'         => get_permalink( $post_id ),
+            'provider'    => [
+                '@type' => RendanIT_SEO::get_setting( 'schema_type', 'LocalBusiness' ),
+                'name'  => $business_name,
+            ],
+        ];
+
+        $desc = get_post_meta( $post_id, '_rseo_description', true );
+        if ( $desc ) {
+            $schema['description'] = $desc;
+        }
+
+        if ( has_post_thumbnail( $post_id ) ) {
+            $schema['image'] = get_the_post_thumbnail_url( $post_id, 'large' );
+        }
 
         $this->print_json_ld( $schema );
     }

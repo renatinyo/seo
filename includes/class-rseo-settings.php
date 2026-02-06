@@ -46,40 +46,65 @@ class RSEO_Settings {
     }
 
     public function sanitize_settings( $input ) {
-        $sanitized = [];
+        // IMPORTANT: Merge with existing settings so other tabs' data is preserved
+        $existing = get_option( 'rseo_settings', [] );
+        $sanitized = is_array( $existing ) ? $existing : [];
+
         $text_fields = [
             'title_separator', 'site_name', 'home_title', 'home_description',
-            'schema_type', 'schema_name', 'schema_description', 'schema_street',
+            'schema_type', 'schema_name', 'schema_street',
             'schema_city', 'schema_zip', 'schema_country', 'schema_phone',
             'schema_email', 'schema_url', 'schema_lat', 'schema_lng',
-            'schema_price_range', 'schema_opening', 'schema_image',
+            'schema_price_range', 'schema_image',
             'og_default_image', 'og_type', 'twitter_card',
-            'robots_txt', 'gtm_id', 'ga4_id',
+            'gtm_id', 'ga4_id',
         ];
 
         foreach ( $text_fields as $field ) {
-            $sanitized[ $field ] = isset( $input[ $field ] ) ? sanitize_text_field( $input[ $field ] ) : '';
+            if ( isset( $input[ $field ] ) ) {
+                $sanitized[ $field ] = sanitize_text_field( $input[ $field ] );
+            }
         }
 
+        // Textarea fields (preserve newlines)
+        $textarea_fields = [ 'schema_opening', 'robots_txt', 'schema_description' ];
+        foreach ( $textarea_fields as $field ) {
+            if ( isset( $input[ $field ] ) ) {
+                $sanitized[ $field ] = sanitize_textarea_field( $input[ $field ] );
+            }
+        }
+
+        // Checkboxes - only update if the relevant tab was submitted
         $checkbox_fields = [ 'noindex_archives', 'noindex_tags', 'noindex_author', 'sitemap_enabled' ];
-        foreach ( $checkbox_fields as $field ) {
-            $sanitized[ $field ] = isset( $input[ $field ] ) ? 1 : 0;
+        // Detect which tab is being saved by checking for tab-specific fields
+        $is_indexing_tab = isset( $input['robots_txt'] ) || isset( $input['noindex_archives'] ) || isset( $input['sitemap_enabled'] );
+        if ( $is_indexing_tab ) {
+            foreach ( $checkbox_fields as $field ) {
+                $sanitized[ $field ] = isset( $input[ $field ] ) ? 1 : 0;
+            }
         }
 
         // Handle multilang home titles/descriptions
         if ( RendanIT_SEO::has_polylang() && function_exists( 'pll_languages_list' ) ) {
             $languages = pll_languages_list( [ 'fields' => 'slug' ] );
             foreach ( $languages as $lang ) {
-                $sanitized[ 'home_title_' . $lang ] = isset( $input[ 'home_title_' . $lang ] )
-                    ? sanitize_text_field( $input[ 'home_title_' . $lang ] ) : '';
-                $sanitized[ 'home_description_' . $lang ] = isset( $input[ 'home_description_' . $lang ] )
-                    ? sanitize_textarea_field( $input[ 'home_description_' . $lang ] ) : '';
+                if ( isset( $input[ 'home_title_' . $lang ] ) ) {
+                    $sanitized[ 'home_title_' . $lang ] = sanitize_text_field( $input[ 'home_title_' . $lang ] );
+                }
+                if ( isset( $input[ 'home_description_' . $lang ] ) ) {
+                    $sanitized[ 'home_description_' . $lang ] = sanitize_textarea_field( $input[ 'home_description_' . $lang ] );
+                }
             }
         }
 
         // Schema services (JSON)
         if ( isset( $input['schema_services'] ) ) {
             $sanitized['schema_services'] = sanitize_textarea_field( $input['schema_services'] );
+        }
+
+        // LLMS.txt content
+        if ( isset( $input['llms_content'] ) ) {
+            $sanitized['llms_content'] = sanitize_textarea_field( $input['llms_content'] );
         }
 
         return $sanitized;
@@ -121,6 +146,12 @@ class RSEO_Settings {
                 <a href="?page=rendanit-seo&tab=tracking" class="nav-tab <?php echo $active_tab === 'tracking' ? 'nav-tab-active' : ''; ?>">
                     📊 Tracking
                 </a>
+                <a href="?page=rendanit-seo&tab=llms" class="nav-tab <?php echo $active_tab === 'llms' ? 'nav-tab-active' : ''; ?>">
+                    🤖 AI (llms.txt)
+                </a>
+                <a href="?page=rendanit-seo&tab=tools" class="nav-tab <?php echo $active_tab === 'tools' ? 'nav-tab-active' : ''; ?>">
+                    🧪 Eszközök
+                </a>
             </nav>
 
             <form method="post" action="options.php">
@@ -147,11 +178,17 @@ class RSEO_Settings {
                         case 'tracking':
                             $this->tab_tracking( $settings );
                             break;
+                        case 'llms':
+                            $this->tab_llms( $settings );
+                            break;
+                        case 'tools':
+                            $this->tab_tools( $settings );
+                            break;
                     }
                     ?>
                 </div>
 
-                <?php submit_button( 'Mentés' ); ?>
+                <?php if ( $active_tab !== 'tools' ) submit_button( 'Mentés' ); ?>
             </form>
         </div>
         <?php
@@ -408,6 +445,9 @@ class RSEO_Settings {
     }
 
     private function tab_indexing( $s ) {
+        $sitemap_url = home_url( '/rseo-sitemap.xml' );
+        $sitemap_generated = get_option( 'rseo_sitemap_generated', '' );
+        $sitemap_file_exists = file_exists( ABSPATH . 'rseo-sitemap.xml' );
         ?>
         <h2>Indexelés Beállítások</h2>
         <table class="form-table">
@@ -420,11 +460,35 @@ class RSEO_Settings {
                 </td>
             </tr>
             <tr>
-                <th><label>Sitemap</label></th>
+                <th><label>XML Sitemap</label></th>
                 <td>
                     <label><input type="checkbox" name="rseo_settings[sitemap_enabled]" value="1" <?php checked( $this->get( $s, 'sitemap_enabled', 1 ) ); ?>> XML Sitemap engedélyezése</label>
+
                     <?php if ( $this->get( $s, 'sitemap_enabled', 1 ) ) : ?>
-                        <p class="description">Sitemap URL: <a href="<?php echo esc_url( home_url( '/rseo-sitemap.xml' ) ); ?>" target="_blank"><?php echo esc_html( home_url( '/rseo-sitemap.xml' ) ); ?></a></p>
+                        <div style="margin-top:15px;padding:15px;background:#f9f9f9;border:1px solid #ddd;border-radius:8px;">
+                            <p style="margin-top:0;">
+                                <button type="button" id="rseo-generate-sitemap" class="button button-primary" style="font-size:14px;padding:5px 20px;">
+                                    🗺️ Sitemap Generálása
+                                </button>
+                            </p>
+                            <div id="rseo-sitemap-status" style="margin-top:10px;">
+                                <?php if ( $sitemap_file_exists && $sitemap_generated ) : ?>
+                                    <p style="color:#00a32a;">
+                                        ✅ Sitemap létezik — Utoljára generálva: <strong><?php echo esc_html( $sitemap_generated ); ?></strong>
+                                    </p>
+                                    <p>
+                                        <a href="<?php echo esc_url( $sitemap_url ); ?>" target="_blank"><?php echo esc_html( $sitemap_url ); ?></a>
+                                    </p>
+                                <?php elseif ( $sitemap_file_exists ) : ?>
+                                    <p style="color:#00a32a;">✅ Sitemap fájl létezik.</p>
+                                    <p>
+                                        <a href="<?php echo esc_url( $sitemap_url ); ?>" target="_blank"><?php echo esc_html( $sitemap_url ); ?></a>
+                                    </p>
+                                <?php else : ?>
+                                    <p style="color:#d63638;">❌ Sitemap még nincs generálva. Kattints a gombra a létrehozáshoz!</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     <?php endif; ?>
                 </td>
             </tr>
@@ -436,6 +500,46 @@ class RSEO_Settings {
                 </td>
             </tr>
         </table>
+
+        <?php if ( $this->get( $s, 'sitemap_enabled', 1 ) ) : ?>
+        <script>
+        jQuery(function($) {
+            $('#rseo-generate-sitemap').on('click', function() {
+                var $btn = $(this);
+                var $status = $('#rseo-sitemap-status');
+
+                $btn.prop('disabled', true).text('⏳ Generálás...');
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'rseo_generate_sitemap',
+                        nonce: '<?php echo wp_create_nonce( 'rseo_generate_sitemap_nonce' ); ?>'
+                    },
+                    success: function(response) {
+                        $btn.prop('disabled', false).html('🗺️ Sitemap Generálása');
+                        if (response.success) {
+                            var d = response.data;
+                            $status.html(
+                                '<p style="color:#00a32a;">✅ <strong>' + d.message + '</strong></p>' +
+                                '<p>Fájlok: ' + d.files.join(', ') + '</p>' +
+                                '<p><a href="' + d.sitemap_url + '" target="_blank">' + d.sitemap_url + '</a></p>'
+                            );
+                        } else {
+                            var msg = response.data && response.data.message ? response.data.message : 'Ismeretlen hiba';
+                            $status.html('<p style="color:#d63638;">❌ Hiba: ' + msg + '</p>');
+                        }
+                    },
+                    error: function() {
+                        $btn.prop('disabled', false).html('🗺️ Sitemap Generálása');
+                        $status.html('<p style="color:#d63638;">❌ AJAX hiba történt.</p>');
+                    }
+                });
+            });
+        });
+        </script>
+        <?php endif; ?>
         <?php
     }
 
@@ -457,6 +561,236 @@ class RSEO_Settings {
                 </td>
             </tr>
         </table>
+        <?php
+    }
+
+    private function tab_llms( $s ) {
+        $llms_url = home_url( '/llms.txt' );
+        ?>
+        <h2>🤖 AI Felismerés (llms.txt)</h2>
+
+        <p class="description" style="font-size:14px;max-width:800px;">
+            Az <code>llms.txt</code> egy új szabvány ami segít az AI rendszereknek (ChatGPT, Claude, Gemini)
+            megérteni a weboldalad tartalmát. Ha valaki megkérdezi az AI-t a cégedről, az AI tudni fog róla.
+        </p>
+
+        <div style="background:#e7f5ff;padding:15px;border-radius:8px;margin:15px 0;border-left:4px solid #2271b1;">
+            <strong>📍 Az llms.txt elérhető itt:</strong><br>
+            <a href="<?php echo esc_url( $llms_url ); ?>" target="_blank" style="font-size:16px;"><?php echo esc_html( $llms_url ); ?></a>
+        </div>
+
+        <h3>Automatikus generálás</h3>
+        <p>Ha üresen hagyod az alábbi mezőt, a plugin automatikusan generálja a tartalmat a Schema beállításokból és az oldalakból.</p>
+
+        <h3>Egyedi tartalom (opcionális)</h3>
+        <table class="form-table">
+            <tr>
+                <th><label for="llms_content">llms.txt tartalma</label></th>
+                <td>
+                    <textarea name="rseo_settings[llms_content]" id="llms_content" rows="15" class="large-text code"
+                        placeholder="Hagyd üresen az automatikus generáláshoz..."><?php echo esc_textarea( $this->get( $s, 'llms_content' ) ); ?></textarea>
+                    <p class="description">Markdown formátumban írd. Ha üresen hagyod, automatikusan generálódik a Schema beállításokból.</p>
+                </td>
+            </tr>
+        </table>
+
+        <h3>Példa formátum</h3>
+        <pre style="background:#f5f5f5;padding:15px;border-radius:4px;overflow-x:auto;max-width:600px;"># Cégnév
+
+> Rövid leírás a cégről.
+
+## Szolgáltatások
+
+- Szolgáltatás 1
+- Szolgáltatás 2
+- Szolgáltatás 3
+
+## Kapcsolat
+
+- Telefon: +36 1 234 5678
+- Email: info@example.com
+
+## Cím
+
+Budapest, Példa utca 123.
+
+## Nyitvatartás
+
+Hétfő-Péntek: 9:00-18:00</pre>
+
+        <h3>Hogyan segít ez?</h3>
+        <ul style="list-style:none;padding:0;">
+            <li>✅ Az AI rendszerek automatikusan olvassák az llms.txt fájlt</li>
+            <li>✅ Ha valaki megkérdezi pl. "Mi az [cégnév] telefonszáma?", az AI tudni fogja</li>
+            <li>✅ A Google és más keresők is értelmezik</li>
+            <li>✅ Javítja az AI-alapú keresési találatokat</li>
+        </ul>
+        <?php
+    }
+
+    private function tab_tools( $s ) {
+        $site_url = home_url();
+        $encoded_url = urlencode( $site_url );
+        $sitemap_url = home_url( '/rseo-sitemap.xml' );
+        $encoded_sitemap = urlencode( $sitemap_url );
+        $llms_url = home_url( '/llms.txt' );
+        ?>
+        <h2>🧪 SEO Eszközök & Tesztelők</h2>
+        <p class="description" style="font-size:14px;">Egy kattintással teszteld az oldalad a legfontosabb Google és SEO eszközökkel. Minden link az oldalad URL-jét tartalmazza.</p>
+
+        <style>
+            .rseo-tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; margin-top: 20px; }
+            .rseo-tool-card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; }
+            .rseo-tool-card h3 { margin-top: 0; font-size: 16px; }
+            .rseo-tool-card p { color: #666; font-size: 13px; margin-bottom: 12px; }
+            .rseo-tool-card .button { margin-right: 5px; margin-bottom: 5px; }
+            .rseo-tool-section { margin-top: 30px; }
+            .rseo-tool-section h2 { border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        </style>
+
+        <!-- Google Eszközök -->
+        <div class="rseo-tool-section">
+            <h2>🔍 Google Eszközök</h2>
+            <div class="rseo-tools-grid">
+
+                <div class="rseo-tool-card">
+                    <h3>📊 PageSpeed Insights</h3>
+                    <p>Oldal sebesség és Core Web Vitals mérés. Mobil és asztali eredmények javítási javaslatokkal.</p>
+                    <a href="https://pagespeed.web.dev/analysis?url=<?php echo $encoded_url; ?>" target="_blank" class="button button-primary">Teszt indítása</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>📱 Mobilbarát teszt</h3>
+                    <p>Ellenőrizd, hogy az oldalad mobilbarát-e. A Google előnyben részesíti a mobilra optimalizált oldalakat.</p>
+                    <a href="https://search.google.com/test/mobile-friendly?url=<?php echo $encoded_url; ?>" target="_blank" class="button button-primary">Teszt indítása</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>🏗️ Rich Results (Schema) Teszt</h3>
+                    <p>Ellenőrizd a Schema markup-ot. Megmutatja a hibákat és figyelmeztetéseket a strukturált adatokban.</p>
+                    <a href="https://search.google.com/test/rich-results?url=<?php echo $encoded_url; ?>" target="_blank" class="button button-primary">Teszt indítása</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>🔎 Google Search Console</h3>
+                    <p>Keresési teljesítmény, indexelés, hibák. URL vizsgálat és sitemap beküldés.</p>
+                    <a href="https://search.google.com/search-console" target="_blank" class="button button-primary">Megnyitás</a>
+                    <a href="https://search.google.com/search-console/inspect?resource_id=<?php echo $encoded_url; ?>" target="_blank" class="button">URL vizsgálat</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>📋 Google Cache</h3>
+                    <p>Nézd meg, hogyan látja a Google az oldalad. Ha nincs cache, az oldal még nem indexelt.</p>
+                    <a href="https://webcache.googleusercontent.com/search?q=cache:<?php echo $encoded_url; ?>" target="_blank" class="button button-primary">Cache megtekintése</a>
+                    <a href="https://www.google.com/search?q=site:<?php echo urlencode( parse_url( $site_url, PHP_URL_HOST ) ); ?>" target="_blank" class="button">Indexelt oldalak</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>🗺️ XML Sitemap</h3>
+                    <p>Az oldalad sitemap-ja. Küldd be a Google Search Console-ba az indexelés gyorsításához.</p>
+                    <a href="<?php echo esc_url( $sitemap_url ); ?>" target="_blank" class="button button-primary">Sitemap megnyitása</a>
+                    <a href="https://www.google.com/ping?sitemap=<?php echo $encoded_sitemap; ?>" target="_blank" class="button">Ping Google</a>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- SEO Elemzők -->
+        <div class="rseo-tool-section">
+            <h2>📈 SEO Elemzők</h2>
+            <div class="rseo-tools-grid">
+
+                <div class="rseo-tool-card">
+                    <h3>🔗 Meta Tag Ellenőrző</h3>
+                    <p>Nézd meg milyen meta tageket lát a Google és a social média az oldaladon.</p>
+                    <a href="https://metatags.io/?url=<?php echo $encoded_url; ?>" target="_blank" class="button button-primary">Ellenőrzés</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>📊 GTmetrix</h3>
+                    <p>Részletes oldal sebesség elemzés, waterfall diagram, és optimalizálási javaslatok.</p>
+                    <a href="https://gtmetrix.com/?url=<?php echo $encoded_url; ?>" target="_blank" class="button button-primary">Teszt indítása</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>🔒 SSL Ellenőrző</h3>
+                    <p>SSL tanúsítvány ellenőrzés. A HTTPS fontos rangsorolási faktor.</p>
+                    <a href="https://www.ssllabs.com/ssltest/analyze.html?d=<?php echo urlencode( parse_url( $site_url, PHP_URL_HOST ) ); ?>" target="_blank" class="button button-primary">SSL Teszt</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>📐 W3C Validator</h3>
+                    <p>HTML validáció. A helyes HTML segíti a keresőmotorok munkáját.</p>
+                    <a href="https://validator.w3.org/nu/?doc=<?php echo $encoded_url; ?>" target="_blank" class="button button-primary">HTML Validáció</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>♿ Accessibility (WAVE)</h3>
+                    <p>Akadálymentesítés ellenőrzés. A Google figyelembe veszi az accessibility-t.</p>
+                    <a href="https://wave.webaim.org/report#/<?php echo $encoded_url; ?>" target="_blank" class="button button-primary">Ellenőrzés</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>🌐 Headers Ellenőrző</h3>
+                    <p>HTTP headers vizsgálat (redirect, cache, security headers).</p>
+                    <a href="https://securityheaders.com/?q=<?php echo $encoded_url; ?>&followRedirects=on" target="_blank" class="button button-primary">Headers Teszt</a>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Social Media -->
+        <div class="rseo-tool-section">
+            <h2>📱 Social Media Tesztelők</h2>
+            <div class="rseo-tools-grid">
+
+                <div class="rseo-tool-card">
+                    <h3>📘 Facebook Debugger</h3>
+                    <p>Open Graph tagek ellenőrzése. Itt tudod frissíteni a Facebook cache-t is megosztás után.</p>
+                    <a href="https://developers.facebook.com/tools/debug/?q=<?php echo $encoded_url; ?>" target="_blank" class="button button-primary">Debug</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>🐦 Twitter Card Validator</h3>
+                    <p>Twitter Card előnézet ellenőrzés. Nézd meg hogyan jelenik meg a tweet-ben az oldalad.</p>
+                    <a href="https://cards-dev.twitter.com/validator" target="_blank" class="button button-primary">Validator megnyitása</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>💼 LinkedIn Inspector</h3>
+                    <p>LinkedIn post előnézet. Frissítsd a LinkedIn cache-t ha módosítottad az OG tageket.</p>
+                    <a href="https://www.linkedin.com/post-inspector/inspect/<?php echo $encoded_url; ?>" target="_blank" class="button button-primary">Inspect</a>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Saját Oldal -->
+        <div class="rseo-tool-section">
+            <h2>🏠 Saját Oldal Linkek</h2>
+            <div class="rseo-tools-grid">
+
+                <div class="rseo-tool-card">
+                    <h3>🗺️ Sitemap</h3>
+                    <p>Az oldalad XML sitemap fájlja.</p>
+                    <a href="<?php echo esc_url( $sitemap_url ); ?>" target="_blank" class="button button-primary">rseo-sitemap.xml</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>🤖 robots.txt</h3>
+                    <p>A keresőrobotoknak szóló utasítások.</p>
+                    <a href="<?php echo esc_url( home_url( '/robots.txt' ) ); ?>" target="_blank" class="button button-primary">robots.txt</a>
+                </div>
+
+                <div class="rseo-tool-card">
+                    <h3>🤖 llms.txt</h3>
+                    <p>AI rendszereknek szóló oldal leírás.</p>
+                    <a href="<?php echo esc_url( $llms_url ); ?>" target="_blank" class="button button-primary">llms.txt</a>
+                </div>
+
+            </div>
+        </div>
+
         <?php
     }
 

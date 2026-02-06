@@ -8,11 +8,34 @@ class RSEO_Metabox {
         add_action( 'save_post', [ $this, 'save_meta' ], 10, 2 );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 
+        // AJAX handler for analysis
+        add_action( 'wp_ajax_rseo_run_analysis', [ $this, 'ajax_run_analysis' ] );
+
         // Post list column
         add_filter( 'manage_posts_columns', [ $this, 'add_seo_column' ] );
         add_filter( 'manage_pages_columns', [ $this, 'add_seo_column' ] );
         add_action( 'manage_posts_custom_column', [ $this, 'render_seo_column' ], 10, 2 );
         add_action( 'manage_pages_custom_column', [ $this, 'render_seo_column' ], 10, 2 );
+    }
+
+    /**
+     * AJAX handler for running SEO analysis
+     */
+    public function ajax_run_analysis() {
+        check_ajax_referer( 'rseo_analysis_nonce', 'nonce' );
+
+        $post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
+        if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
+            wp_send_json_error( 'Invalid post ID' );
+        }
+
+        // Invalidate cache to get fresh results
+        RSEO_Score::invalidate_cache( $post_id );
+
+        // Get fresh score
+        $result = RSEO_Score::calculate( $post_id );
+
+        wp_send_json_success( $result );
     }
 
     public function add_meta_box() {
@@ -93,17 +116,22 @@ class RSEO_Metabox {
             <div class="rseo-mtab-content" id="rseo-tab-social">
                 <p>
                     <label><strong>OG Title (Facebook/LinkedIn):</strong></label><br>
-                    <input type="text" name="rseo_og_title" value="<?php echo esc_attr( $og_title ); ?>" class="widefat" placeholder="Hagyj üresen a SEO title használatához">
+                    <input type="text" name="rseo_og_title" value="<?php echo esc_attr( $og_title ); ?>" class="widefat" id="rseo_og_title" placeholder="Hagyj üresen a SEO title használatához">
                 </p>
                 <p>
                     <label><strong>OG Description:</strong></label><br>
-                    <textarea name="rseo_og_description" class="widefat" rows="2" placeholder="Hagyj üresen a meta description használatához"><?php echo esc_textarea( $og_desc ); ?></textarea>
+                    <textarea name="rseo_og_description" class="widefat" rows="2" id="rseo_og_description" placeholder="Hagyj üresen a meta description használatához"><?php echo esc_textarea( $og_desc ); ?></textarea>
                 </p>
                 <p>
                     <label><strong>OG Kép URL:</strong></label><br>
                     <input type="url" name="rseo_og_image" value="<?php echo esc_attr( $og_image ); ?>" class="widefat" id="rseo_og_image" placeholder="Hagyj üresen a kiemelt kép használatához">
                     <button type="button" class="button rseo-upload-image" data-target="#rseo_og_image">Kép kiválasztása</button>
                 </p>
+
+                <?php
+                // Social Preview hook - rendered by RSEO_Social_Preview class
+                do_action( 'rseo_metabox_social_tab', $post );
+                ?>
             </div>
 
             <!-- Advanced Tab -->
@@ -184,10 +212,16 @@ class RSEO_Metabox {
 
     public function enqueue_scripts( $hook ) {
         if ( ! in_array( $hook, [ 'post.php', 'post-new.php' ] ) ) return;
+
+        global $post;
+
         wp_enqueue_script( 'rseo-metabox', RSEO_PLUGIN_URL . 'admin/js/metabox.js', [ 'jquery' ], RSEO_VERSION, true );
         wp_localize_script( 'rseo-metabox', 'rseoMetabox', [
             'separator' => RendanIT_SEO::get_setting( 'title_separator', '|' ),
             'siteName'  => RendanIT_SEO::get_setting( 'site_name', get_bloginfo( 'name' ) ),
+            'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+            'nonce'     => wp_create_nonce( 'rseo_analysis_nonce' ),
+            'postId'    => $post ? $post->ID : 0,
         ]);
     }
 

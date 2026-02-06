@@ -1,0 +1,270 @@
+/**
+ * RendanIT SEO - 404 Monitor Styles
+ */
+
+.rseo-404-wrap {
+    max-width: 1400px;
+}
+
+/* Stats */
+.rseo-404-stats {
+    display: flex;
+    gap: 20px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.rseo-stat-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px 30px;
+    min-width: 150px;
+    text-align: center;
+}
+
+.rseo-stat-number {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    color: #1d2327;
+}
+
+.rseo-stat-label {
+    display: block;
+    font-size: 13px;
+    color: #646970;
+    margin-top: 5px;
+}
+
+.rseo-stat-warning {
+    border-left: 4px solid #dba617;
+}
+
+.rseo-stat-warning .rseo-stat-number {
+    color: #996800;
+}
+
+.rseo-stat-danger {
+    border-left: 4px solid #d63638;
+}
+
+.rseo-stat-danger .rseo-stat-number {
+    color: #d63638;
+}
+
+/* Toolbar */
+.rseo-404-toolbar {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.rseo-filter-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.rseo-search-form {
+    display: flex;
+    gap: 5px;
+}
+
+.rseo-search-form input[type="search"] {
+    min-width: 200px;
+    padding: 6px 12px;
+}
+
+.rseo-bulk-actions {
+    margin-left: auto;
+}
+
+.rseo-delete-all-404 {
+    color: #b32d2e !important;
+    border-color: #b32d2e !important;
+}
+
+.rseo-delete-all-404:hover {
+    background: #b32d2e !important;
+    color: #fff !important;
+}
+
+/* Table */
+.rseo-404-table {
+    margin-top: 15px;
+}
+
+.rseo-404-table .column-url {
+    width: 30%;
+}
+
+.rseo-404-table .column-referrer {
+    width: 20%;
+}
+
+.rseo-404-table .column-hits {
+    width: 100px;
+    text-align: center;
+}
+
+.rseo-404-table .column-last {
+    width: 130px;
+}
+
+.rseo-404-table .column-status {
+    width: 100px;
+    text-align: center;
+}
+
+.rseo-404-table .column-actions {
+    width: 100px;
+    text-align: center;
+}
+
+.rseo-404-table code {
+    background: #f0f0f1;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.rseo-404-table small {
+    color: #646970;
+    display: block;
+    font-size: 11px;
+}
+
+.rseo-test-link {
+    text-decoration: none;
+    margin-left: 5px;
+    opacity: 0.6;
+}
+
+.rseo-test-link:hover {
+    opacity: 1;
+}
+
+.rseo-no-referrer {
+    color: #646970;
+    font-style: italic;
+}
+
+.rseo-hit-count {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-weight: 600;
+    background: #f0f0f1;
+}
+
+.rseo-hit-count.rseo-high {
+    background: #fce4e4;
+    color: #d63638;
+}
+
+.rseo-status {
+    font-size: 12px;
+}
+
+.rseo-status-resolved {
+    color: #00a32a;
+}
+
+.rseo-status-pending {
+    color: #dba617;
+}
+
+.rseo-resolved {
+    opacity: 0.6;
+    background: #f9f9f9;
+}
+
+.rseo-no-data {
+    text-align: center;
+    padding: 40px !important;
+    color: #646970;
+    font-style: italic;
+}
+
+/* Modal */
+.rseo-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rseo-modal-content {
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    width: 500px;
+    max-width: 90%;
+    box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
+}
+
+.rseo-modal-content h3 {
+    margin-top: 0;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.rseo-modal-content label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.rseo-modal-content input[type="text"] {
+    padding: 10px 12px;
+}
+
+.rseo-modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+/* Loading */
+.rseo-loading-row td {
+    opacity: 0.5;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .rseo-404-stats {
+        flex-direction: column;
+    }
+
+    .rseo-stat-card {
+        width: 100%;
+    }
+
+    .rseo-404-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .rseo-filter-buttons {
+        width: 100%;
+    }
+
+    .rseo-filter-buttons .button {
+        flex: 1;
+    }
+
+    .rseo-bulk-actions {
+        margin-left: 0;
+    }
+}

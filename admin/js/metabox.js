@@ -1,5 +1,6 @@
 /**
  * RendanIT SEO Metabox JS
+ * Version 1.3.2 - Server-side analysis via AJAX
  */
 (function($) {
     'use strict';
@@ -21,9 +22,9 @@
         // Title input - update preview
         $('#rseo_title').on('input', function() {
             var val = $(this).val();
-            var sep = rseoMetabox.separator || '|';
-            var site = rseoMetabox.siteName || '';
-            var postTitle = $('#title').val() || '';
+            var sep = (typeof rseoMetabox !== 'undefined' && rseoMetabox.separator) ? rseoMetabox.separator : '|';
+            var site = (typeof rseoMetabox !== 'undefined' && rseoMetabox.siteName) ? rseoMetabox.siteName : '';
+            var postTitle = getPostTitle();
 
             var displayTitle = val || (postTitle + ' ' + sep + ' ' + site);
             $('#rseo-preview-title').text(displayTitle);
@@ -46,139 +47,178 @@
         $('#rseo_title').trigger('input');
         $('#rseo_description').trigger('input');
 
-        // SEO Analysis
-        $('#rseo-run-analysis').on('click', function() {
+        /**
+         * Get post title from various sources (for preview only)
+         */
+        function getPostTitle() {
+            var title = '';
+
+            // 1. Classic Editor - standard #title field
+            title = $('#title').val();
+            if (title) return title;
+
+            // 2. Gutenberg - post title from wp.data
+            if (typeof wp !== 'undefined' && wp.data && wp.data.select) {
+                var editor = wp.data.select('core/editor');
+                if (editor && editor.getEditedPostAttribute) {
+                    title = editor.getEditedPostAttribute('title');
+                    if (title) return title;
+                }
+            }
+
+            // 3. Gutenberg - DOM fallback
+            title = $('.editor-post-title__input').val() || $('.editor-post-title__input').text();
+            if (title) return title;
+
+            // 4. Post title input name fallback
+            title = $('input[name="post_title"]').val();
+            if (title) return title;
+
+            return '';
+        }
+
+        // SEO Analysis - use event delegation for dynamic button
+        $(document).on('click', '#rseo-run-analysis', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             runAnalysis();
+            return false;
         });
 
+        /**
+         * Run analysis via AJAX (server-side)
+         * This ensures Elementor content is properly analyzed
+         */
         function runAnalysis() {
-            var results = [];
-            var title = $('#rseo_title').val();
-            var desc = $('#rseo_description').val();
-            var focus = $('#rseo_focus_keyword').val();
-            var postTitle = $('#title').val();
-            var content = '';
+            var $results = $('#rseo-analysis-results');
 
-            // Try to get content from editor
-            if (typeof tinymce !== 'undefined' && tinymce.get('content')) {
-                content = tinymce.get('content').getContent({ format: 'text' });
-            } else {
-                content = $('#content').val() || '';
+            // Show loading state
+            $results.html('<div style="text-align:center;padding:40px;"><span class="spinner is-active" style="float:none;"></span><p>Elemzés folyamatban...</p></div>');
+
+            // Check if we have the required data
+            if (typeof rseoMetabox === 'undefined' || !rseoMetabox.postId) {
+                $results.html('<div style="padding:15px;background:#f8d7da;color:#721c24;border-radius:4px;">Hiba: Hiányzó post ID. Mentsd el először a bejegyzést!</div>');
+                return;
             }
 
-            var sep = rseoMetabox.separator || '|';
-            var site = rseoMetabox.siteName || '';
-            var effectiveTitle = title || (postTitle + ' ' + sep + ' ' + site);
-
-            // Title checks
-            if (!title) {
-                results.push({ type: 'warning', text: '⚠️ Egyedi SEO title nincs megadva (automatikus generálás aktív)' });
-            } else if (title.length > 60) {
-                results.push({ type: 'error', text: '❌ SEO title túl hosszú (' + title.length + '/60 karakter)' });
-            } else if (title.length < 20) {
-                results.push({ type: 'warning', text: '⚠️ SEO title túl rövid (' + title.length + '/60 karakter)' });
-            } else {
-                results.push({ type: 'good', text: '✅ SEO title optimális hosszúságú (' + title.length + '/60)' });
-            }
-
-            // Description checks
-            if (!desc) {
-                results.push({ type: 'error', text: '❌ Meta description hiányzik!' });
-            } else if (desc.length > 155) {
-                results.push({ type: 'warning', text: '⚠️ Meta description túl hosszú (' + desc.length + '/155)' });
-            } else if (desc.length < 50) {
-                results.push({ type: 'warning', text: '⚠️ Meta description túl rövid (' + desc.length + '/155)' });
-            } else {
-                results.push({ type: 'good', text: '✅ Meta description optimális (' + desc.length + '/155)' });
-            }
-
-            // Focus keyword checks
-            if (!focus) {
-                results.push({ type: 'warning', text: '⚠️ Nincs fókusz kulcsszó megadva' });
-            } else {
-                var focusLower = focus.toLowerCase();
-
-                // In title
-                if (effectiveTitle.toLowerCase().indexOf(focusLower) !== -1) {
-                    results.push({ type: 'good', text: '✅ Fókusz kulcsszó szerepel a title-ben' });
-                } else {
-                    results.push({ type: 'error', text: '❌ Fókusz kulcsszó NEM szerepel a title-ben' });
-                }
-
-                // In description
-                if (desc && desc.toLowerCase().indexOf(focusLower) !== -1) {
-                    results.push({ type: 'good', text: '✅ Fókusz kulcsszó szerepel a meta descriptionben' });
-                } else {
-                    results.push({ type: 'warning', text: '⚠️ Fókusz kulcsszó nem szerepel a meta descriptionben' });
-                }
-
-                // In content
-                if (content) {
-                    var contentLower = content.toLowerCase();
-                    var kwCount = (contentLower.split(focusLower).length - 1);
-                    var wordCount = content.split(/\s+/).length;
-                    var density = wordCount > 0 ? ((kwCount / wordCount) * 100).toFixed(1) : 0;
-
-                    if (kwCount === 0) {
-                        results.push({ type: 'error', text: '❌ Fókusz kulcsszó nem szerepel a tartalomban!' });
+            // Make AJAX call to server
+            $.ajax({
+                url: rseoMetabox.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'rseo_run_analysis',
+                    nonce: rseoMetabox.nonce,
+                    post_id: rseoMetabox.postId
+                },
+                success: function(response) {
+                    if (response.success && response.data) {
+                        renderAnalysisResults(response.data);
                     } else {
-                        results.push({ type: 'good', text: '✅ Fókusz kulcsszó ' + kwCount + 'x szerepel a tartalomban (sűrűség: ' + density + '%)' });
+                        $results.html('<div style="padding:15px;background:#f8d7da;color:#721c24;border-radius:4px;">Hiba történt az elemzés során. Próbáld újra!</div>');
                     }
+                },
+                error: function() {
+                    $results.html('<div style="padding:15px;background:#f8d7da;color:#721c24;border-radius:4px;">Hálózati hiba. Ellenőrizd a kapcsolatot és próbáld újra!</div>');
                 }
+            });
+        }
 
-                // In URL
-                var permalink = $('#sample-permalink a').text() || '';
-                var slug = permalink.split('/').filter(Boolean).pop() || '';
-                if (slug.toLowerCase().indexOf(focusLower.replace(/\s+/g, '-')) !== -1) {
-                    results.push({ type: 'good', text: '✅ Fókusz kulcsszó szerepel az URL-ben' });
+        /**
+         * Render analysis results from server response
+         */
+        function renderAnalysisResults(data) {
+            var score = data.score || 0;
+            var grade = data.grade || 'F';
+            var checks = data.checks || [];
+            var categories = data.categories || {};
+
+            // Score color
+            var scoreColor = '#d63638';
+            if (score >= 80) scoreColor = '#00a32a';
+            else if (score >= 55) scoreColor = '#dba617';
+            else if (score >= 30) scoreColor = '#e65100';
+
+            // Build HTML
+            var html = '';
+
+            // Score header
+            html += '<div style="text-align:center;margin-bottom:20px;padding:20px;background:#f8f9fa;border-radius:8px;">';
+            html += '<div style="font-size:56px;font-weight:bold;color:' + scoreColor + '">' + score + '</div>';
+            html += '<div style="font-size:24px;font-weight:bold;color:' + scoreColor + ';margin-top:5px;">' + grade + '</div>';
+            html += '<div style="color:#666;margin-top:5px;">SEO Pontszám</div>';
+            html += '</div>';
+
+            // Category summary
+            html += '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;">';
+            var categoryLabels = {
+                'meta': '📝 Meta',
+                'content': '📄 Tartalom',
+                'keyword': '🔑 Kulcsszó',
+                'media': '🖼️ Média',
+                'links': '🔗 Linkek',
+                'technical': '⚙️ Tech',
+                'social': '📱 Social',
+                'readability': '📖 Olvashatóság'
+            };
+            for (var cat in categories) {
+                var catData = categories[cat];
+                var catPercent = catData.total > 0 ? Math.round((catData.earned / catData.total) * 100) : 0;
+                var catColor = catPercent >= 70 ? '#00a32a' : (catPercent >= 40 ? '#dba617' : '#d63638');
+                var catLabel = categoryLabels[cat] || cat;
+                html += '<div style="flex:1;min-width:80px;text-align:center;padding:8px;background:#fff;border:1px solid #ddd;border-radius:4px;">';
+                html += '<div style="font-size:10px;color:#666;">' + catLabel + '</div>';
+                html += '<div style="font-size:16px;font-weight:bold;color:' + catColor + '">' + catPercent + '%</div>';
+                html += '</div>';
+            }
+            html += '</div>';
+
+            // Individual checks
+            checks.forEach(function(check) {
+                var bgColor, textColor, icon;
+
+                if (check.severity === 'good') {
+                    bgColor = '#d4edda';
+                    textColor = '#155724';
+                    icon = '✅';
+                } else if (check.severity === 'critical') {
+                    bgColor = '#f8d7da';
+                    textColor = '#721c24';
+                    icon = '❌';
+                } else if (check.severity === 'warning') {
+                    bgColor = '#fff3cd';
+                    textColor = '#856404';
+                    icon = '⚠️';
                 } else {
-                    results.push({ type: 'warning', text: '⚠️ Fókusz kulcsszó nem szerepel az URL slug-ban' });
+                    bgColor = '#cce5ff';
+                    textColor = '#004085';
+                    icon = 'ℹ️';
                 }
-            }
 
-            // Content length
-            if (content) {
-                var wordCount = content.split(/\s+/).length;
-                if (wordCount < 100) {
-                    results.push({ type: 'error', text: '❌ Nagyon kevés tartalom (' + wordCount + ' szó, ajánlott min. 300)' });
-                } else if (wordCount < 300) {
-                    results.push({ type: 'warning', text: '⚠️ Kevés tartalom (' + wordCount + ' szó, ajánlott min. 300)' });
-                } else {
-                    results.push({ type: 'good', text: '✅ Tartalom hossz megfelelő (' + wordCount + ' szó)' });
+                html += '<div style="padding:10px 12px;margin:5px 0;border-radius:4px;background:' + bgColor + ';color:' + textColor + '">';
+                html += '<div>' + icon + ' ' + check.message + '</div>';
+                if (check.fix && check.severity !== 'good') {
+                    html += '<div style="font-size:11px;margin-top:4px;opacity:0.8;">💡 ' + check.fix + '</div>';
                 }
-            }
-
-            // H1 check (check if post title is set)
-            if (!postTitle) {
-                results.push({ type: 'error', text: '❌ Nincs cím (H1) megadva!' });
-            } else {
-                results.push({ type: 'good', text: '✅ Cím (H1) megvan' });
-            }
-
-            // Render results
-            var html = '<h4>SEO Elemzés Eredménye</h4>';
-            var score = 0;
-            var total = results.length;
-
-            results.forEach(function(r) {
-                var cls = r.type === 'good' ? 'rseo-analysis-good' : (r.type === 'error' ? 'rseo-analysis-error' : 'rseo-analysis-warning');
-                html += '<div class="' + cls + '" style="padding:6px 10px;margin:4px 0;border-radius:4px;';
-                if (r.type === 'good') html += 'background:#d4edda;color:#155724';
-                else if (r.type === 'error') html += 'background:#f8d7da;color:#721c24';
-                else html += 'background:#fff3cd;color:#856404';
-                html += '">' + r.text + '</div>';
-
-                if (r.type === 'good') score += 100;
-                else if (r.type === 'warning') score += 50;
+                html += '</div>';
             });
 
-            var percentage = total > 0 ? Math.round(score / total) : 0;
-            var scoreColor = percentage >= 70 ? '#00a32a' : (percentage >= 40 ? '#dba617' : '#d63638');
-            html = '<div style="text-align:center;margin-bottom:15px;">' +
-                '<span style="font-size:48px;font-weight:bold;color:' + scoreColor + '">' + percentage + '%</span>' +
-                '<br><span style="color:#666">SEO Pontszám</span></div>' + html;
+            // Re-analyze button
+            html += '<div style="text-align:center;margin-top:20px;">';
+            html += '<button type="button" class="button button-primary" id="rseo-run-analysis">🔄 Újra elemzés</button>';
+            html += '<p style="font-size:11px;color:#666;margin-top:10px;">Az elemzés a mentett tartalmat vizsgálja. Változtatások után mentsd el a bejegyzést az újraelemzéshez!</p>';
+            html += '</div>';
 
             $('#rseo-analysis-results').html(html);
+        }
+
+        // Auto-run analysis when switching to analysis tab
+        $(document).on('click', '.rseo-mtab[data-tab="analysis"]', function() {
+            setTimeout(runAnalysis, 200);
+        });
+
+        // Run analysis on page load if analysis tab is active
+        if ($('#rseo-tab-analysis').hasClass('active')) {
+            setTimeout(runAnalysis, 500);
         }
 
     });

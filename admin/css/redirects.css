@@ -1,0 +1,327 @@
+/**
+ * RendanIT SEO - Redirect Manager Styles
+ */
+
+/* Wrap */
+.rseo-redirects-wrap {
+    max-width: 1400px;
+}
+
+.rseo-redirects-wrap h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Form */
+.rseo-redirect-form-wrap {
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    margin: 20px 0;
+}
+
+.rseo-redirect-form-wrap h2 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.rseo-form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+.rseo-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.rseo-form-field label {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.rseo-form-field input[type="text"] {
+    min-width: 250px;
+    padding: 8px 12px;
+}
+
+.rseo-form-field.rseo-arrow {
+    font-size: 24px;
+    color: #2271b1;
+    padding-bottom: 8px;
+}
+
+.rseo-form-field.rseo-type select {
+    padding: 8px 12px;
+    min-width: 140px;
+}
+
+.rseo-form-field.rseo-regex {
+    padding-bottom: 10px;
+}
+
+.rseo-form-field.rseo-regex label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: normal;
+}
+
+.rseo-form-field.rseo-notes input {
+    min-width: 150px;
+}
+
+.rseo-form-field.rseo-submit {
+    padding-bottom: 3px;
+}
+
+.rseo-form-field .description {
+    font-size: 11px;
+    color: #646970;
+}
+
+/* Search */
+.rseo-search-form {
+    margin: 20px 0;
+}
+
+.rseo-search-form .search-box {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.rseo-search-form input[type="search"] {
+    min-width: 300px;
+    padding: 6px 12px;
+}
+
+/* Stats */
+.rseo-redirect-stats {
+    display: flex;
+    gap: 30px;
+    margin: 15px 0;
+    padding: 15px 20px;
+    background: #f6f7f7;
+    border-radius: 4px;
+}
+
+.rseo-stat strong {
+    font-size: 18px;
+    color: #1d2327;
+}
+
+/* Table */
+.rseo-redirects-table {
+    margin-top: 15px;
+}
+
+.rseo-redirects-table th {
+    font-weight: 600;
+}
+
+.rseo-redirects-table .column-source {
+    width: 25%;
+}
+
+.rseo-redirects-table .column-target {
+    width: 25%;
+}
+
+.rseo-redirects-table .column-type {
+    width: 80px;
+    text-align: center;
+}
+
+.rseo-redirects-table .column-hits {
+    width: 100px;
+    text-align: center;
+}
+
+.rseo-redirects-table .column-status {
+    width: 100px;
+    text-align: center;
+}
+
+.rseo-redirects-table .column-date {
+    width: 100px;
+}
+
+.rseo-redirects-table .column-actions {
+    width: 80px;
+    text-align: center;
+}
+
+.rseo-redirects-table code {
+    background: #f0f0f1;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.rseo-redirects-table .rseo-inactive {
+    opacity: 0.6;
+    background: #f9f9f9;
+}
+
+.rseo-redirects-table .rseo-external-link {
+    text-decoration: none;
+    margin-left: 5px;
+    opacity: 0.6;
+}
+
+.rseo-redirects-table .rseo-external-link:hover {
+    opacity: 1;
+}
+
+.rseo-redirects-table .rseo-notes {
+    color: #646970;
+    font-style: italic;
+}
+
+.rseo-redirects-table small {
+    color: #646970;
+    display: block;
+    font-size: 11px;
+}
+
+.rseo-no-redirects {
+    text-align: center;
+    padding: 40px !important;
+    color: #646970;
+    font-style: italic;
+}
+
+/* Badges */
+.rseo-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.rseo-badge-301 {
+    background: #d4edda;
+    color: #155724;
+}
+
+.rseo-badge-302 {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.rseo-badge-307 {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.rseo-badge-regex {
+    background: #e2e3e5;
+    color: #383d41;
+    margin-left: 5px;
+}
+
+/* Toggle button */
+.rseo-toggle-redirect {
+    cursor: pointer;
+    padding: 5px 10px !important;
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+
+.rseo-toggle-redirect:hover {
+    background: #f0f0f1;
+}
+
+/* Delete button */
+.rseo-delete-redirect {
+    color: #b32d2e !important;
+    border-color: #b32d2e !important;
+}
+
+.rseo-delete-redirect:hover {
+    background: #b32d2e !important;
+    color: #fff !important;
+}
+
+/* Import/Export */
+.rseo-redirect-import-export {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f6f7f7;
+    border-radius: 4px;
+}
+
+.rseo-redirect-import-export h3 {
+    margin-top: 0;
+}
+
+/* Slug change notice */
+.rseo-slug-notice {
+    border-left-color: #dba617 !important;
+}
+
+.rseo-slug-notice code {
+    background: #f0f0f1;
+    padding: 3px 8px;
+    border-radius: 3px;
+}
+
+.rseo-slug-notice .button {
+    margin-right: 10px;
+}
+
+/* Loading state */
+.rseo-loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Success animation */
+@keyframes rseo-flash-green {
+    0% { background-color: #d4edda; }
+    100% { background-color: transparent; }
+}
+
+.rseo-flash-success {
+    animation: rseo-flash-green 1s ease;
+}
+
+/* Responsive */
+@media screen and (max-width: 1200px) {
+    .rseo-form-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .rseo-form-field input[type="text"],
+    .rseo-form-field.rseo-type select {
+        min-width: 100%;
+        width: 100%;
+    }
+
+    .rseo-form-field.rseo-arrow {
+        display: none;
+    }
+}
+
+@media screen and (max-width: 782px) {
+    .rseo-redirect-stats {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .rseo-redirects-table .column-date,
+    .rseo-redirects-table .column-hits {
+        display: none;
+    }
+}

@@ -40,6 +40,9 @@ class RSEO_Score {
         'url_length'           => [ 'weight' => 3,  'category' => 'technical','severity' => 'info'     ],
         'has_schema'           => [ 'weight' => 3,  'category' => 'technical','severity' => 'info'     ],
         'has_og_image'         => [ 'weight' => 2,  'category' => 'social',   'severity' => 'info'     ],
+
+        // Readability (uses RSEO_Readability class)
+        'readability_score'    => [ 'weight' => 5,  'category' => 'readability', 'severity' => 'warning' ],
     ];
 
     /**
@@ -142,6 +145,10 @@ class RSEO_Score {
      */
     private static function gather_data( $post ) {
         $content_raw  = $post->post_content;
+
+        // Allow plugins (like Elementor integration) to provide enhanced content
+        $content_raw = apply_filters( 'rseo_get_post_content', $content_raw, $post->ID );
+
         $content_text = wp_strip_all_tags( $content_raw );
         $content_text = str_replace( [ "\n", "\r", "\t" ], ' ', $content_text );
         $content_text = preg_replace( '/\s+/', ' ', $content_text );
@@ -158,19 +165,48 @@ class RSEO_Score {
         $permalink = get_permalink( $post->ID );
         $slug      = basename( untrailingslashit( parse_url( $permalink, PHP_URL_PATH ) ) );
 
-        // Count images & alt texts
+        // Count images & alt texts from HTML
         preg_match_all( '/<img[^>]+>/i', $content_raw, $img_matches );
-        $images = $img_matches[0] ?? [];
+        $html_images = $img_matches[0] ?? [];
         $images_without_alt = 0;
-        foreach ( $images as $img ) {
+        $images_count = count( $html_images );
+
+        foreach ( $html_images as $img ) {
             if ( ! preg_match( '/alt=["\'][^"\']+["\']/', $img ) ) {
                 $images_without_alt++;
             }
         }
 
-        // Links
+        // Also check Elementor images via filter
+        $elementor_images = apply_filters( 'rseo_get_post_images', [], $post->ID );
+        if ( ! empty( $elementor_images ) ) {
+            $images_count += count( $elementor_images );
+            foreach ( $elementor_images as $img ) {
+                // Check if alt is empty
+                if ( empty( $img['alt'] ) ) {
+                    // Try to get alt from attachment
+                    if ( ! empty( $img['id'] ) ) {
+                        $attachment_alt = get_post_meta( $img['id'], '_wp_attachment_image_alt', true );
+                        if ( empty( $attachment_alt ) ) {
+                            $images_without_alt++;
+                        }
+                    } else {
+                        $images_without_alt++;
+                    }
+                }
+            }
+        }
+
+        // Links from HTML
         preg_match_all( '/<a[^>]+href=["\']([^"\']+)["\'][^>]*>/i', $content_raw, $link_matches );
         $links = $link_matches[1] ?? [];
+
+        // Also get Elementor links via filter
+        $elementor_links = apply_filters( 'rseo_get_post_links', [], $post->ID );
+        if ( ! empty( $elementor_links ) ) {
+            $links = array_merge( $links, $elementor_links );
+        }
+
         $home  = home_url();
         $internal_links = 0;
         $external_links = 0;
@@ -182,8 +218,14 @@ class RSEO_Score {
             }
         }
 
-        // H1 tags
+        // H1 tags - first check standard HTML
         preg_match_all( '/<h1[^>]*>(.*?)<\/h1>/is', $content_raw, $h1_matches );
+
+        // Allow plugins (like Elementor) to provide H1
+        $elementor_h1 = apply_filters( 'rseo_get_post_h1', '', $post->ID );
+        if ( $elementor_h1 && empty( $h1_matches[1] ) ) {
+            $h1_matches[1] = [ $elementor_h1 ];
+        }
 
         return [
             'post'               => $post,
@@ -198,8 +240,8 @@ class RSEO_Score {
             'word_count'         => str_word_count( $content_text ),
             'permalink'          => $permalink,
             'slug'               => $slug,
-            'images'             => $images,
-            'images_count'       => count( $images ),
+            'images'             => array_merge( $html_images, $elementor_images ),
+            'images_count'       => $images_count,
             'images_without_alt' => $images_without_alt,
             'internal_links'     => $internal_links,
             'external_links'     => $external_links,
@@ -292,14 +334,20 @@ class RSEO_Score {
     }
 
     private static function check_h1_exists( $d ) {
-        // WordPress post title is typically H1
+        // Check for explicit H1 in content (including from Elementor)
+        if ( ! empty( $d['h1_tags'] ) ) {
+            return [ 'pass' => true, 'message' => 'H1 cím megvan a tartalomban ✓' ];
+        }
+
+        // WordPress post title is typically rendered as H1 by themes
         if ( $d['post']->post_title ) {
             return [ 'pass' => true, 'message' => 'H1 cím megvan (bejegyzés cím)' ];
         }
+
         return [
             'pass'    => false,
             'message' => 'Nincs H1 cím',
-            'fix'     => 'Adj meg címet a bejegyzésnek',
+            'fix'     => 'Adj meg címet a bejegyzésnek, vagy adj hozzá H1 heading widget-et Elementorban',
         ];
     }
 
@@ -549,6 +597,47 @@ class RSEO_Score {
         ];
     }
 
+    private static function check_readability_score( $d ) {
+        // Check if RSEO_Readability class exists
+        if ( ! class_exists( 'RSEO_Readability' ) ) {
+            return [ 'pass' => true, 'message' => 'Olvashatóság ellenőrzés nem elérhető' ];
+        }
+
+        // Skip for short content
+        if ( $d['word_count'] < 100 ) {
+            return [
+                'pass'    => 0.5,
+                'message' => 'Túl rövid tartalom az olvashatóság méréséhez',
+                'fix'     => 'Írj legalább 100 szavas tartalmat',
+            ];
+        }
+
+        $analysis = RSEO_Readability::analyze( $d['content_raw'] );
+        $score = $analysis['score'];
+        $grade = RSEO_Readability::get_grade_label( $score );
+
+        if ( $score >= 70 ) {
+            return [
+                'pass'    => true,
+                'message' => "Kiváló olvashatóság ({$score}% - {$grade})",
+            ];
+        }
+
+        if ( $score >= 50 ) {
+            return [
+                'pass'    => 0.7,
+                'message' => "Megfelelő olvashatóság ({$score}% - {$grade})",
+                'fix'     => 'Rövidítsd a mondatokat és használj több kötőszót',
+            ];
+        }
+
+        return [
+            'pass'    => 0.3,
+            'message' => "Nehezen olvasható szöveg ({$score}% - {$grade})",
+            'fix'     => 'Egyszerűsítsd a mondatokat, tagold bekezdésekre, adj hozzá alcímeket',
+        ];
+    }
+
     // ========== UTILITY ==========
 
     private static function score_to_grade( $score ) {
@@ -575,13 +664,14 @@ class RSEO_Score {
      */
     public static function category_label( $cat ) {
         $labels = [
-            'meta'      => '📝 Meta Tagek',
-            'content'   => '📄 Tartalom',
-            'keyword'   => '🔑 Kulcsszavak',
-            'media'     => '🖼️ Képek & Média',
-            'links'     => '🔗 Linkek',
-            'technical' => '⚙️ Technikai',
-            'social'    => '📱 Social',
+            'meta'        => '📝 Meta Tagek',
+            'content'     => '📄 Tartalom',
+            'keyword'     => '🔑 Kulcsszavak',
+            'media'       => '🖼️ Képek & Média',
+            'links'       => '🔗 Linkek',
+            'technical'   => '⚙️ Technikai',
+            'social'      => '📱 Social',
+            'readability' => '📖 Olvashatóság',
         ];
         return $labels[ $cat ] ?? ucfirst( $cat );
     }

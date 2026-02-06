@@ -3,7 +3,7 @@
  * Plugin Name: RendanIT SEO
  * Plugin URI: https://rendanit.com
  * Description: Testreszabott SEO plugin Polylang integrációval. Meta címek, leírások, Schema markup, hreflang, Open Graph, sitemap és SEO audit.
- * Version: 1.1.0
+ * Version: 1.5.0
  * Author: RendanIT
  * Author URI: https://rendanit.com
  * Text Domain: rendanit-seo
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'RSEO_VERSION', '1.1.0' );
+define( 'RSEO_VERSION', '1.5.0' );
 define( 'RSEO_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RSEO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'RSEO_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
@@ -50,6 +50,14 @@ final class RendanIT_SEO {
         require_once RSEO_PLUGIN_DIR . 'includes/class-rseo-audit.php';
         require_once RSEO_PLUGIN_DIR . 'includes/class-rseo-score.php';
         require_once RSEO_PLUGIN_DIR . 'includes/class-rseo-admin-bar.php';
+        require_once RSEO_PLUGIN_DIR . 'includes/class-rseo-redirects.php';
+        require_once RSEO_PLUGIN_DIR . 'includes/class-rseo-404-monitor.php';
+        require_once RSEO_PLUGIN_DIR . 'includes/class-rseo-readability.php';
+        require_once RSEO_PLUGIN_DIR . 'includes/class-rseo-bulk-editor.php';
+        require_once RSEO_PLUGIN_DIR . 'includes/class-rseo-social-preview.php';
+        require_once RSEO_PLUGIN_DIR . 'includes/class-rseo-link-suggestions.php';
+        require_once RSEO_PLUGIN_DIR . 'includes/class-rseo-elementor.php';
+        require_once RSEO_PLUGIN_DIR . 'includes/class-rseo-llms.php';
     }
 
     private function init_hooks() {
@@ -96,6 +104,10 @@ final class RendanIT_SEO {
         if ( ! get_option( 'rseo_settings' ) ) {
             update_option( 'rseo_settings', $defaults );
         }
+
+        // Create database tables
+        RSEO_Redirects::create_table();
+        RSEO_404_Monitor::create_table();
 
         // Flush rewrite rules for sitemap
         flush_rewrite_rules();

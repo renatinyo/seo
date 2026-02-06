@@ -1,0 +1,265 @@
+/**
+ * RendanIT SEO - Bulk Editor Styles
+ */
+
+.rseo-bulk-wrap {
+    max-width: 1600px;
+}
+
+/* Filters */
+.rseo-bulk-filters {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.rseo-filter-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.rseo-filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.rseo-filter-item label {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.rseo-filter-item select,
+.rseo-filter-item input[type="text"] {
+    padding: 8px 12px;
+    min-width: 150px;
+}
+
+.rseo-filter-search input {
+    min-width: 200px !important;
+}
+
+.rseo-filter-buttons {
+    flex-direction: row !important;
+    gap: 10px !important;
+}
+
+/* Bulk Actions */
+.rseo-bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.rseo-bulk-status {
+    color: #00a32a;
+    font-weight: 600;
+}
+
+#rseo-save-all:disabled {
+    opacity: 0.5;
+}
+
+.rseo-change-count {
+    font-weight: 700;
+}
+
+/* Table */
+.rseo-bulk-table-wrap {
+    overflow-x: auto;
+}
+
+.rseo-bulk-table {
+    min-width: 1200px;
+}
+
+.rseo-bulk-table th {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.rseo-char-hint {
+    font-weight: normal;
+    color: #646970;
+    font-size: 11px;
+}
+
+.rseo-bulk-table .column-title {
+    width: 200px;
+}
+
+.rseo-bulk-table .column-seo-title {
+    width: 280px;
+}
+
+.rseo-bulk-table .column-seo-desc {
+    width: 350px;
+}
+
+.rseo-bulk-table .column-focus-kw {
+    width: 150px;
+}
+
+.rseo-bulk-table .column-score {
+    width: 80px;
+    text-align: center;
+}
+
+.rseo-bulk-table input[type="text"],
+.rseo-bulk-table textarea {
+    width: 100%;
+    padding: 8px;
+    font-size: 13px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.rseo-bulk-table input[type="text"]:focus,
+.rseo-bulk-table textarea:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+    outline: none;
+}
+
+.rseo-bulk-table textarea {
+    min-height: 60px;
+    resize: vertical;
+}
+
+.rseo-bulk-table .rseo-changed input,
+.rseo-bulk-table .rseo-changed textarea {
+    background: #fff8e5;
+    border-color: #dba617;
+}
+
+/* Post title cell */
+.rseo-post-title {
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.rseo-post-title a {
+    text-decoration: none;
+}
+
+.rseo-post-title a:hover {
+    text-decoration: underline;
+}
+
+.rseo-post-meta {
+    font-size: 11px;
+    color: #646970;
+    margin-top: 5px;
+}
+
+.rseo-post-links {
+    margin-top: 5px;
+}
+
+.rseo-post-links a {
+    font-size: 11px;
+    margin-right: 10px;
+}
+
+/* Score cell */
+.rseo-score-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+}
+
+.rseo-score-excellent {
+    background: #00a32a;
+}
+
+.rseo-score-good {
+    background: #72aee6;
+}
+
+.rseo-score-fair {
+    background: #dba617;
+}
+
+.rseo-score-poor {
+    background: #d63638;
+}
+
+.rseo-grade {
+    display: block;
+    font-size: 11px;
+    color: #646970;
+    margin-top: 3px;
+    text-align: center;
+}
+
+/* Char counter */
+.rseo-char-counter {
+    font-size: 11px;
+    color: #646970;
+    text-align: right;
+    margin-top: 3px;
+}
+
+.rseo-char-counter.rseo-over {
+    color: #d63638;
+    font-weight: 600;
+}
+
+/* Pagination */
+.rseo-bulk-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px 0;
+    padding: 15px;
+    background: #f6f7f7;
+    border-radius: 4px;
+}
+
+.rseo-page-info {
+    font-weight: 600;
+}
+
+/* Export */
+.rseo-bulk-export {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f6f7f7;
+    border-radius: 4px;
+}
+
+.rseo-bulk-export h3 {
+    margin-top: 0;
+}
+
+/* Loading */
+.rseo-loading-row td {
+    text-align: center;
+    padding: 40px !important;
+    color: #646970;
+}
+
+/* Responsive */
+@media screen and (max-width: 1200px) {
+    .rseo-filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .rseo-filter-item select,
+    .rseo-filter-item input[type="text"] {
+        width: 100%;
+    }
+}
