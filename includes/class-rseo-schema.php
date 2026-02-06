@@ -110,6 +110,19 @@ class RSEO_Schema {
             }
         }
 
+        // Available languages (Polylang)
+        if ( RendanIT_SEO::has_polylang() && function_exists( 'pll_languages_list' ) ) {
+            $languages = pll_languages_list( [ 'fields' => '' ] );
+            if ( count( $languages ) > 1 ) {
+                $available = [];
+                foreach ( $languages as $lang ) {
+                    $locale = isset( $lang->locale ) ? $lang->locale : $lang->slug;
+                    $available[] = str_replace( '_', '-', $locale );
+                }
+                $schema['availableLanguage'] = $available;
+            }
+        }
+
         $this->print_json_ld( $schema );
     }
 
@@ -119,17 +132,22 @@ class RSEO_Schema {
     private function output_website() {
         if ( ! is_front_page() && ! is_home() ) return;
 
+        $current_lang = RendanIT_SEO::get_current_lang();
+
         $schema = [
-            '@context' => 'https://schema.org',
-            '@type'    => 'WebSite',
-            'name'     => RendanIT_SEO::get_setting( 'site_name', get_bloginfo( 'name' ) ),
-            'url'      => home_url( '/' ),
+            '@context'   => 'https://schema.org',
+            '@type'      => 'WebSite',
+            'name'       => RendanIT_SEO::get_setting( 'site_name', get_bloginfo( 'name' ) ),
+            'url'        => home_url( '/' ),
+            'inLanguage' => $current_lang,
         ];
 
-        // Add available languages
+        // Add alternate languages
         if ( RendanIT_SEO::has_polylang() && function_exists( 'pll_languages_list' ) ) {
             $languages = pll_languages_list( [ 'fields' => 'slug' ] );
-            $schema['inLanguage'] = $languages;
+            if ( count( $languages ) > 1 ) {
+                $schema['availableLanguage'] = $languages;
+            }
         }
 
         $this->print_json_ld( $schema );
@@ -179,21 +197,36 @@ class RSEO_Schema {
         $schema_type = get_post_meta( $post_id, '_rseo_schema_type', true );
         $type = ( $schema_type === 'Article' ) ? 'Article' : 'BlogPosting';
 
+        $business_name = RendanIT_SEO::get_setting( 'schema_name', get_bloginfo( 'name' ) );
+        $business_logo = RendanIT_SEO::get_setting( 'schema_image' );
+
+        $publisher = [
+            '@type' => 'Organization',
+            'name'  => $business_name,
+        ];
+        if ( $business_logo ) {
+            $publisher['logo'] = [
+                '@type' => 'ImageObject',
+                'url'   => $business_logo,
+            ];
+        }
+
         $schema = [
-            '@context'      => 'https://schema.org',
-            '@type'         => $type,
-            'headline'      => get_the_title( $post_id ),
-            'url'           => get_permalink( $post_id ),
-            'datePublished' => get_the_date( 'c', $post_id ),
-            'dateModified'  => get_the_modified_date( 'c', $post_id ),
-            'author'        => [
-                '@type' => 'Organization',
-                'name'  => RendanIT_SEO::get_setting( 'schema_name', get_bloginfo( 'name' ) ),
+            '@context'         => 'https://schema.org',
+            '@type'            => $type,
+            'mainEntityOfPage' => [
+                '@type' => 'WebPage',
+                '@id'   => get_permalink( $post_id ),
             ],
-            'publisher'     => [
+            'headline'         => get_the_title( $post_id ),
+            'url'              => get_permalink( $post_id ),
+            'datePublished'    => get_the_date( 'c', $post_id ),
+            'dateModified'     => get_the_modified_date( 'c', $post_id ),
+            'author'           => [
                 '@type' => 'Organization',
-                'name'  => RendanIT_SEO::get_setting( 'schema_name', get_bloginfo( 'name' ) ),
+                'name'  => $business_name,
             ],
+            'publisher'        => $publisher,
         ];
 
         if ( has_post_thumbnail( $post_id ) ) {
@@ -201,6 +234,11 @@ class RSEO_Schema {
         }
 
         $desc = get_post_meta( $post_id, '_rseo_description', true );
+        if ( ! $desc ) {
+            $content = wp_strip_all_tags( $post->post_content );
+            $content = preg_replace( '/\s+/', ' ', $content );
+            $desc = mb_substr( trim( $content ), 0, 155 );
+        }
         if ( $desc ) {
             $schema['description'] = $desc;
         }
@@ -223,12 +261,17 @@ class RSEO_Schema {
         $site_name = RendanIT_SEO::get_setting( 'site_name', get_bloginfo( 'name' ) );
         if ( ! $site_name ) $site_name = get_bloginfo( 'name' );
 
-        // Home
+        // Home - use current language home URL
+        $home_url = home_url( '/' );
+        if ( RendanIT_SEO::has_polylang() && function_exists( 'pll_home_url' ) ) {
+            $home_url = pll_home_url();
+        }
+
         $items[] = [
             '@type'    => 'ListItem',
             'position' => $pos++,
             'name'     => $site_name,
-            'item'     => home_url( '/' ),
+            'item'     => $home_url,
         ];
 
         // Post parent pages (for hierarchical)
@@ -297,6 +340,11 @@ class RSEO_Schema {
 
         if ( has_post_thumbnail( $post_id ) ) {
             $schema['image'] = get_the_post_thumbnail_url( $post_id, 'large' );
+        }
+
+        $lang = RendanIT_SEO::get_current_lang();
+        if ( $lang ) {
+            $schema['inLanguage'] = $lang;
         }
 
         $this->print_json_ld( $schema );
